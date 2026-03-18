@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Простой мессенджер</title>
+    <title>Мессенджер с играми и ботами</title>
     <style>
         * {
             margin: 0;
@@ -12,272 +12,356 @@
         }
         
         body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        #app {
-            width: 100%;
-            max-width: 1200px;
-            height: 90vh;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
             overflow: hidden;
         }
         
-        /* Левая панель */
-        #sidebar {
-            width: 300px;
-            background: #f8f9fa;
-            border-right: 1px solid #dee2e6;
+        #app {
+            height: 100vh;
             display: flex;
             flex-direction: column;
         }
         
-        #user-info {
-            padding: 20px;
+        /* Верхняя панель */
+        #top-nav {
+            background: #2d2d2d;
+            border-bottom: 1px solid #404040;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+            color: #aaa;
+        }
+        
+        .nav-tab:hover {
+            background: #404040;
+            color: #fff;
+        }
+        
+        .nav-tab.active {
             background: #007bff;
             color: white;
         }
         
-        #current-user {
-            font-weight: bold;
-            font-size: 18px;
+        #user-menu {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
         
-        #search-section {
-            padding: 15px;
-            border-bottom: 1px solid #dee2e6;
+        #username-display {
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        #logout-btn {
+            padding: 6px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* Основной контент */
+        #main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* Боковая панель */
+        #sidebar {
+            width: 280px;
+            background: #2d2d2d;
+            border-right: 1px solid #404040;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #404040;
         }
         
         #search-input {
             width: 100%;
             padding: 10px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            font-size: 14px;
+            background: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: #fff;
+            border-radius: 6px;
         }
         
-        #search-results {
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .user-item {
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-bottom: 5px;
-            background: white;
-            border: 1px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .user-item:hover {
-            background: #e9ecef;
-        }
-        
-        .online-status {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-        
-        .online {
-            background: #28a745;
-        }
-        
-        .offline {
-            background: #dc3545;
-        }
-        
-        #users-list {
+        #sidebar-content {
             flex: 1;
             overflow-y: auto;
             padding: 15px;
         }
         
-        .chat-user {
+        .sidebar-item {
             padding: 12px;
-            margin-bottom: 5px;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
+            margin-bottom: 8px;
+            background: #363636;
+            border-radius: 8px;
             cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            transition: background 0.2s;
         }
         
-        .chat-user:hover {
-            background: #e9ecef;
+        .sidebar-item:hover {
+            background: #404040;
         }
         
-        .chat-user.selected {
+        .sidebar-item.selected {
             background: #007bff;
-            color: white;
         }
         
-        /* Правая панель */
-        #chat-area {
+        .item-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .item-desc {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        /* Основная область */
+        #content-area {
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: #1e1e1e;
         }
         
-        #chat-header {
+        #content-header {
             padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            font-weight: bold;
+            border-bottom: 1px solid #404040;
             font-size: 18px;
+            font-weight: bold;
         }
         
-        #messages-container {
+        #content-body {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
         }
         
+        /* Сообщения */
         .message {
-            max-width: 70%;
             margin-bottom: 15px;
             padding: 10px 15px;
-            border-radius: 10px;
-            position: relative;
+            background: #2d2d2d;
+            border-radius: 8px;
+            max-width: 70%;
         }
         
         .message.sent {
-            align-self: flex-end;
             background: #007bff;
-            color: white;
+            margin-left: auto;
         }
         
-        .message.received {
-            align-self: flex-start;
-            background: #e9ecef;
-        }
-        
-        .message-time {
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 5px;
-        }
-        
-        .delete-timer {
-            font-size: 10px;
-            opacity: 0.5;
-            margin-top: 2px;
-        }
-        
-        #message-input-area {
-            padding: 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
+        .message-header {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #aaa;
         }
         
-        #message-input {
-            flex: 1;
-            padding: 12px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
+        .message.sent .message-header {
+            color: #fff;
+            opacity: 0.8;
+        }
+        
+        /* Карточки игр */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .game-card {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-2px);
+            background: #363636;
+        }
+        
+        .game-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        
+        .game-description {
+            color: #aaa;
             font-size: 14px;
+            margin-bottom: 15px;
         }
         
-        #send-button {
-            padding: 12px 24px;
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #888;
+            font-size: 12px;
+        }
+        
+        /* Формы */
+        .create-form {
+            max-width: 500px;
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: #fff;
+            border-radius: 4px;
+        }
+        
+        .form-group textarea {
+            height: 150px;
+            font-family: monospace;
+        }
+        
+        .btn {
+            padding: 10px 20px;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
         }
         
-        #send-button:hover {
+        .btn:hover {
             background: #0056b3;
         }
         
-        #send-button:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-        
-        #login-screen {
+        /* Модальные окна */
+        .modal {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            justify-content: center;
+            background: rgba(0,0,0,0.8);
             align-items: center;
+            justify-content: center;
             z-index: 1000;
         }
         
-        #login-form {
-            background: white;
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #2d2d2d;
             padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        /* Экран входа */
+        #auth-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        #auth-form {
+            background: #2d2d2d;
+            padding: 40px;
             border-radius: 10px;
             width: 300px;
         }
         
-        #login-form h2 {
+        #auth-form h2 {
             margin-bottom: 20px;
-            color: #333;
+            text-align: center;
         }
         
-        #login-form input {
+        #auth-form input {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            font-size: 14px;
+            background: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: #fff;
+            border-radius: 4px;
         }
         
-        #login-form button {
-            width: 100%;
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .auth-buttons button {
+            flex: 1;
             padding: 12px;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
         }
         
-        #login-form button:hover {
-            background: #0056b3;
+        .auth-buttons button:last-child {
+            background: #28a745;
         }
         
-        .error-message {
+        #auth-error {
             color: #dc3545;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        
-        .info-message {
-            padding: 10px;
-            background: #e7f3ff;
-            border: 1px solid #b8daff;
-            border-radius: 5px;
-            color: #004085;
             margin-bottom: 10px;
             text-align: center;
         }
@@ -285,42 +369,137 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <div id="login-screen">
-        <div id="login-form">
-            <h2>Вход в мессенджер</h2>
-            <div id="login-error" class="error-message"></div>
-            <input type="text" id="username-input" placeholder="Введите имя пользователя" autocomplete="off">
-            <button onclick="register()">Войти</button>
+    <!-- Экран авторизации -->
+    <div id="auth-screen">
+        <div id="auth-form">
+            <h2>Мессенджер</h2>
+            <div id="auth-error"></div>
+            <input type="text" id="auth-username" placeholder="Имя пользователя">
+            <input type="password" id="auth-password" placeholder="Пароль">
+            <div class="auth-buttons">
+                <button onclick="login()">Войти</button>
+                <button onclick="register()">Регистрация</button>
+            </div>
         </div>
     </div>
     
+    <!-- Основное приложение -->
     <div id="app" style="display: none;">
-        <div id="sidebar">
-            <div id="user-info">
-                <div id="current-user"></div>
+        <!-- Верхняя навигация -->
+        <div id="top-nav">
+            <div class="nav-tabs">
+                <div class="nav-tab active" onclick="switchTab('chats')">Чаты</div>
+                <div class="nav-tab" onclick="switchTab('channels')">Каналы</div>
+                <div class="nav-tab" onclick="switchTab('games')">Игры</div>
+                <div class="nav-tab" onclick="switchTab('bots')">Боты</div>
             </div>
             
-            <div id="search-section">
-                <input type="text" id="search-input" placeholder="Поиск пользователей..." oninput="searchUsers()">
-                <div id="search-results"></div>
-            </div>
-            
-            <div id="users-list">
-                <h3 style="padding: 10px; color: #666;">Доступные чаты</h3>
-                <div id="chats-list"></div>
+            <div id="user-menu">
+                <span id="username-display"></span>
+                <button id="logout-btn" onclick="logout()">Выйти</button>
             </div>
         </div>
         
-        <div id="chat-area">
-            <div id="chat-header">
-                Выберите пользователя для начала чата
+        <!-- Основной контент -->
+        <div id="main-content">
+            <!-- Боковая панель -->
+            <div id="sidebar">
+                <div id="sidebar-header">
+                    <input type="text" id="search-input" placeholder="Поиск..." oninput="search()">
+                </div>
+                <div id="sidebar-content"></div>
             </div>
             
-            <div id="messages-container"></div>
-            
-            <div id="message-input-area">
-                <input type="text" id="message-input" placeholder="Введите сообщение..." disabled>
-                <button id="send-button" onclick="sendMessage()" disabled>Отправить</button>
+            <!-- Основная область -->
+            <div id="content-area">
+                <div id="content-header"></div>
+                <div id="content-body"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно создания игры -->
+    <div class="modal" id="create-game-modal">
+        <div class="modal-content">
+            <h2>Создать игру</h2>
+            <div class="create-form">
+                <div class="form-group">
+                    <label>Название игры</label>
+                    <input type="text" id="game-name" placeholder="Введите название">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="game-description" placeholder="Опишите игру"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Код игры (JavaScript)</label>
+                    <textarea id="game-code" placeholder="// Ваш код игры"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Тип игры</label>
+                    <select id="game-type">
+                        <option value="clicker">Кликер</option>
+                        <option value="quiz">Викторина</option>
+                        <option value="rpg">RPG</option>
+                        <option value="other">Другое</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="submitGame()">Отправить на проверку</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно создания бота -->
+    <div class="modal" id="create-bot-modal">
+        <div class="modal-content">
+            <h2>Создать бота</h2>
+            <div class="create-form">
+                <div class="form-group">
+                    <label>Имя бота</label>
+                    <input type="text" id="bot-name" placeholder="Введите имя">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="bot-description" placeholder="Опишите бота"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Код бота (JavaScript)</label>
+                    <textarea id="bot-code" placeholder="// Код обработки команд
+function onMessage(command, args, user) {
+    // Ваша логика
+    return 'Ответ бота';
+}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Команды (через запятую)</label>
+                    <input type="text" id="bot-commands" placeholder="/help, /info, /game">
+                </div>
+                <button class="btn" onclick="submitBot()">Отправить на проверку</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно создания канала -->
+    <div class="modal" id="create-channel-modal">
+        <div class="modal-content">
+            <h2>Создать канал</h2>
+            <div class="create-form">
+                <div class="form-group">
+                    <label>Название канала</label>
+                    <input type="text" id="channel-name" placeholder="Введите название">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="channel-description" placeholder="Опишите канал"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Тип</label>
+                    <select id="channel-type">
+                        <option value="public">Публичный</option>
+                        <option value="private">Приватный</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="createChannel()">Создать</button>
             </div>
         </div>
     </div>
@@ -328,199 +507,364 @@
     <script>
         const socket = io();
         let currentUser = null;
-        let selectedUser = null;
-        let messages = [];
-        let users = new Map();
+        let currentTab = 'chats';
+        let selectedItem = null;
+        let games = [];
+        let bots = [];
+        let channels = [];
         
-        // Функция регистрации
-        async function register() {
-            const username = document.getElementById('username-input').value.trim();
-            const errorDiv = document.getElementById('login-error');
-            
-            if (!username) {
-                errorDiv.textContent = 'Введите имя пользователя';
-                return;
+        // Проверка авторизации при загрузке
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/me');
+                const data = await response.json();
+                
+                if (data.user) {
+                    currentUser = data.user;
+                    document.getElementById('username-display').textContent = currentUser.username;
+                    document.getElementById('auth-screen').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    socket.emit('authenticate', currentUser.id);
+                    loadTabContent();
+                }
+            } catch (error) {
+                console.error('Ошибка проверки авторизации:', error);
             }
+        }
+        
+        // Регистрация
+        async function register() {
+            const username = document.getElementById('auth-username').value;
+            const password = document.getElementById('auth-password').value;
             
             try {
-                const response = await fetch('/register', {
+                const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username })
+                    body: JSON.stringify({ username, password })
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok) {
-                    currentUser = username;
-                    document.getElementById('current-user').textContent = `Вы: ${username}`;
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('app').style.display = 'flex';
-                    
-                    socket.emit('authenticate', username);
-                    
-                    // Загружаем список пользователей
-                    searchUsers();
+                    await checkAuth();
                 } else {
-                    errorDiv.textContent = data.error;
+                    document.getElementById('auth-error').textContent = data.error;
                 }
             } catch (error) {
-                errorDiv.textContent = 'Ошибка подключения к серверу';
+                document.getElementById('auth-error').textContent = 'Ошибка подключения';
             }
         }
         
-        // Поиск пользователей
-        async function searchUsers() {
-            const query = document.getElementById('search-input').value.trim();
-            const resultsDiv = document.getElementById('search-results');
-            
-            if (query.length < 1) {
-                resultsDiv.innerHTML = '';
-                return;
-            }
+        // Вход
+        async function login() {
+            const username = document.getElementById('auth-username').value;
+            const password = document.getElementById('auth-password').value;
             
             try {
-                const response = await fetch(`/search-users?query=${encodeURIComponent(query)}`);
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    await checkAuth();
+                } else {
+                    document.getElementById('auth-error').textContent = data.error;
+                }
+            } catch (error) {
+                document.getElementById('auth-error').textContent = 'Ошибка подключения';
+            }
+        }
+        
+        // Выход
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            location.reload();
+        }
+        
+        // Переключение вкладок
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            loadTabContent();
+        }
+        
+        // Загрузка контента вкладки
+        async function loadTabContent() {
+            const sidebar = document.getElementById('sidebar-content');
+            const header = document.getElementById('content-header');
+            const body = document.getElementById('content-body');
+            
+            switch(currentTab) {
+                case 'chats':
+                    header.innerHTML = 'Личные сообщения';
+                    sidebar.innerHTML = '<div class="sidebar-item" onclick="showUserSearch()"><div class="item-name">🔍 Поиск пользователей</div><div class="item-desc">Найти нового собеседника</div></div>';
+                    body.innerHTML = '<div class="info-message">Выберите пользователя для начала чата</div>';
+                    break;
+                    
+                case 'channels':
+                    header.innerHTML = 'Каналы <button class="btn" style="margin-left: 20px;" onclick="openCreateChannel()">+ Создать</button>';
+                    await loadChannels();
+                    break;
+                    
+                case 'games':
+                    header.innerHTML = 'Игры <button class="btn" style="margin-left: 20px;" onclick="openCreateGame()">+ Создать игру</button>';
+                    await loadGames();
+                    break;
+                    
+                case 'bots':
+                    header.innerHTML = 'Боты <button class="btn" style="margin-left: 20px;" onclick="openCreateBot()">+ Создать бота</button>';
+                    await loadBots();
+                    break;
+            }
+        }
+        
+        // Поиск
+        async function search() {
+            const query = document.getElementById('search-input').value;
+            
+            if (currentTab === 'chats') {
+                const response = await fetch(`/api/users/search?query=${query}`);
                 const users = await response.json();
                 
-                resultsDiv.innerHTML = users
-                    .filter(u => u.username !== currentUser)
-                    .map(u => `
-                        <div class="user-item" onclick="selectChat('${u.username}')">
-                            <span>${u.username}</span>
-                            <span class="online-status ${u.online ? 'online' : 'offline'}"></span>
-                        </div>
-                    `).join('');
-            } catch (error) {
-                console.error('Ошибка поиска:', error);
-            }
-        }
-        
-        // Выбор чата
-        async function selectChat(username) {
-            selectedUser = username;
-            document.getElementById('chat-header').textContent = `Чат с ${username}`;
-            document.getElementById('message-input').disabled = false;
-            document.getElementById('send-button').disabled = false;
-            
-            // Подсветка выбранного пользователя
-            document.querySelectorAll('.chat-user').forEach(el => {
-                el.classList.remove('selected');
-            });
-            
-            // Загружаем историю сообщений
-            await loadMessages(username);
-            
-            // Обновляем список чатов
-            updateChatsList();
-        }
-        
-        // Загрузка сообщений
-        async function loadMessages(otherUser) {
-            try {
-                const response = await fetch(`/messages/${currentUser}/${otherUser}`);
-                messages = await response.json();
-                displayMessages();
-            } catch (error) {
-                console.error('Ошибка загрузки сообщений:', error);
-            }
-        }
-        
-        // Отображение сообщений
-        function displayMessages() {
-            const container = document.getElementById('messages-container');
-            
-            container.innerHTML = messages.map(msg => {
-                const isSent = msg.from === currentUser;
-                const time = new Date(msg.timestamp).toLocaleTimeString();
-                
-                // Вычисляем время до удаления
-                const timeLeft = 24 * 60 * 60 * 1000 - (Date.now() - msg.timestamp);
-                const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
-                const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-                
-                return `
-                    <div class="message ${isSent ? 'sent' : 'received'}">
-                        <div>${msg.text}</div>
-                        <div class="message-time">${time}</div>
-                        <div class="delete-timer">Удалится через: ${hoursLeft}ч ${minutesLeft}м</div>
+                const sidebar = document.getElementById('sidebar-content');
+                sidebar.innerHTML = users.map(u => `
+                    <div class="sidebar-item" onclick="startChat('${u.id}', '${u.username}')">
+                        <div class="item-name">${u.username}</div>
+                        <div class="item-desc">${u.online ? '🟢 Online' : '⚫ Offline'}</div>
                     </div>
-                `;
-            }).join('');
-            
-            container.scrollTop = container.scrollHeight;
+                `).join('');
+            }
         }
         
-        // Отправка сообщения
-        function sendMessage() {
-            const input = document.getElementById('message-input');
-            const text = input.value.trim();
+        // Загрузка игр
+        async function loadGames() {
+            const response = await fetch('/api/games');
+            games = await response.json();
             
-            if (!text || !selectedUser) return;
-            
-            socket.emit('send-message', {
-                to: selectedUser,
-                text: text
-            });
-            
-            input.value = '';
+            const body = document.getElementById('content-body');
+            body.innerHTML = `
+                <div class="games-grid">
+                    ${games.map(game => `
+                        <div class="game-card" onclick="playGame('${game.id}')">
+                            <div class="game-name">${game.name}</div>
+                            <div class="game-description">${game.description}</div>
+                            <div class="game-meta">
+                                <span>👤 ${game.authorName}</span>
+                                <span>🎮 ${game.plays} игр</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
         
-        // Обновление списка чатов
-        function updateChatsList() {
-            const chatsList = document.getElementById('chats-list');
-            const uniqueUsers = [...new Set([
-                ...messages.map(m => m.from),
-                ...messages.map(m => m.to)
-            ])].filter(u => u !== currentUser);
+        // Загрузка ботов
+        async function loadBots() {
+            const response = await fetch('/api/bots');
+            bots = await response.json();
             
-            chatsList.innerHTML = uniqueUsers.map(username => `
-                <div class="chat-user ${username === selectedUser ? 'selected' : ''}" 
-                     onclick="selectChat('${username}')">
-                    <span>${username}</span>
-                    <span class="online-status ${users.get(username)?.online ? 'online' : 'offline'}"></span>
+            const body = document.getElementById('content-body');
+            body.innerHTML = `
+                <div class="games-grid">
+                    ${bots.map(bot => `
+                        <div class="game-card" onclick="openBotChat('${bot.id}')">
+                            <div class="game-name">🤖 ${bot.name}</div>
+                            <div class="game-description">${bot.description}</div>
+                            <div class="game-meta">
+                                <span>👤 ${bot.authorName}</span>
+                                <span>📝 ${bot.commands?.length || 0} команд</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Загрузка каналов
+        async function loadChannels() {
+            const response = await fetch('/api/channels/my');
+            channels = await response.json();
+            
+            const sidebar = document.getElementById('sidebar-content');
+            sidebar.innerHTML = channels.map(c => `
+                <div class="sidebar-item ${selectedItem === c.id ? 'selected' : ''}" onclick="selectChannel('${c.id}')">
+                    <div class="item-name"># ${c.name}</div>
+                    <div class="item-desc">${c.members.length} участников</div>
                 </div>
             `).join('');
         }
         
-        // Слушатели сокетов
-        socket.on('authenticated', () => {
-            console.log('Аутентификация успешна');
-        });
+        // Выбор канала
+        async function selectChannel(channelId) {
+            selectedItem = channelId;
+            const channel = channels.find(c => c.id === channelId);
+            
+            document.getElementById('content-header').innerHTML = `# ${channel.name}`;
+            
+            const body = document.getElementById('content-body');
+            body.innerHTML = `
+                <div style="height: 100%; display: flex; flex-direction: column;">
+                    <div id="channel-messages" style="flex: 1; overflow-y: auto; margin-bottom: 20px;">
+                        ${channel.messages.map(m => `
+                            <div class="message ${m.userId === currentUser.id ? 'sent' : ''}">
+                                <div class="message-header">
+                                    <span>${m.username}</span>
+                                    <span>${new Date(m.timestamp).toLocaleTimeString()}</span>
+                                </div>
+                                <div>${m.text}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="channel-message-input" style="flex: 1; padding: 10px; background: #3d3d3d; border: 1px solid #4d4d4d; color: #fff; border-radius: 4px;" placeholder="Введите сообщение...">
+                        <button class="btn" onclick="sendChannelMessage('${channelId}')">Отправить</button>
+                    </div>
+                </div>
+            `;
+            
+            socket.emit('join-channel', channelId);
+        }
         
-        socket.on('receive-message', (message) => {
-            if (message.from === selectedUser || message.to === selectedUser) {
-                messages.push(message);
-                displayMessages();
-                updateChatsList();
+        // Отправка сообщения в канал
+        async function sendChannelMessage(channelId) {
+            const input = document.getElementById('channel-message-input');
+            const text = input.value;
+            
+            if (!text) return;
+            
+            const response = await fetch(`/api/channels/${channelId}/message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            
+            if (response.ok) {
+                input.value = '';
+            }
+        }
+        
+        // Открытие модалки создания игры
+        function openCreateGame() {
+            document.getElementById('create-game-modal').classList.add('active');
+        }
+        
+        // Отправка игры на проверку
+        async function submitGame() {
+            const game = {
+                name: document.getElementById('game-name').value,
+                description: document.getElementById('game-description').value,
+                code: document.getElementById('game-code').value,
+                type: document.getElementById('game-type').value
+            };
+            
+            const response = await fetch('/api/games/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(game)
+            });
+            
+            if (response.ok) {
+                alert('Игра отправлена на проверку!');
+                document.getElementById('create-game-modal').classList.remove('active');
+            }
+        }
+        
+        // Открытие модалки создания бота
+        function openCreateBot() {
+            document.getElementById('create-bot-modal').classList.add('active');
+        }
+        
+        // Отправка бота на проверку
+        async function submitBot() {
+            const bot = {
+                name: document.getElementById('bot-name').value,
+                description: document.getElementById('bot-description').value,
+                code: document.getElementById('bot-code').value,
+                commands: document.getElementById('bot-commands').value.split(',').map(c => c.trim())
+            };
+            
+            const response = await fetch('/api/bots/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bot)
+            });
+            
+            if (response.ok) {
+                alert('Бот отправлен на проверку!');
+                document.getElementById('create-bot-modal').classList.remove('active');
+            }
+        }
+        
+        // Открытие модалки создания канала
+        function openCreateChannel() {
+            document.getElementById('create-channel-modal').classList.add('active');
+        }
+        
+        // Создание канала
+        async function createChannel() {
+            const channel = {
+                name: document.getElementById('channel-name').value,
+                description: document.getElementById('channel-description').value,
+                type: document.getElementById('channel-type').value
+            };
+            
+            const response = await fetch('/api/channels/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(channel)
+            });
+            
+            if (response.ok) {
+                alert('Канал создан!');
+                document.getElementById('create-channel-modal').classList.remove('active');
+                loadChannels();
+            }
+        }
+        
+        // Играть в игру
+        async function playGame(gameId) {
+            const game = games.find(g => g.id === gameId);
+            
+            // Увеличиваем счетчик игр
+            await fetch(`/api/games/${gameId}/play`, { method: 'POST' });
+            
+            // Здесь можно открыть игру в модальном окне
+            alert(`Запуск игры: ${game.name}\n\nВ демо-версии игра не запускается. Код игры:\n${game.code}`);
+        }
+        
+        // Открыть чат с ботом
+        function openBotChat(botId) {
+            const bot = bots.find(b => b.id === botId);
+            alert(`Чат с ботом ${bot.name} будет доступен в следующей версии`);
+        }
+        
+        // Socket.IO слушатели
+        socket.on('channel-message', (message) => {
+            if (selectedItem) {
+                const messagesDiv = document.getElementById('channel-messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML += `
+                        <div class="message ${message.userId === currentUser.id ? 'sent' : ''}">
+                            <div class="message-header">
+                                <span>${message.username}</span>
+                                <span>${new Date(message.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <div>${message.text}</div>
+                        </div>
+                    `;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
             }
         });
         
-        socket.on('message-sent', (message) => {
-            messages.push(message);
-            displayMessages();
-            updateChatsList();
-        });
-        
-        socket.on('user-status-change', (data) => {
-            users.set(data.username, { online: data.online });
-            updateChatsList();
-            searchUsers();
-        });
-        
-        socket.on('messages-cleaned', () => {
-            if (selectedUser) {
-                loadMessages(selectedUser);
-            }
-            displayMessages();
-        });
-        
-        // Отправка по Enter
-        document.getElementById('message-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
+        // Проверяем авторизацию при загрузке
+        checkAuth();
     </script>
 </body>
 </html>
