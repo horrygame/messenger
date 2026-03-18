@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ панель - Мессенджер</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #app {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Верхняя панель */
+        #top-nav {
+            background: #2d2d2d;
+            border-bottom: 1px solid #404040;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        #admin-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        #logout-btn {
+            padding: 6px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* Основной контент */
+        #main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* Боковое меню */
+        #sidebar {
+            width: 250px;
+            background: #2d2d2d;
+            border-right: 1px solid #404040;
+            padding: 20px 0;
+        }
+        
+        .menu-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .menu-item:hover {
+            background: #363636;
+        }
+        
+        .menu-item.active {
+            background: #363636;
+            border-left-color: #007bff;
+            color: #007bff;
+        }
+        
+        /* Область контента */
+        #content-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* Карточки */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #aaa;
+        }
+        
+        /* Таблицы */
+        .data-table {
+            width: 100%;
+            background: #2d2d2d;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .data-table th {
+            background: #363636;
+            padding: 12px;
+            text-align: left;
+            font-weight: normal;
+            color: #aaa;
+        }
+        
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #404040;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Кнопки */
+        .btn {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        /* Формы */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            background: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: #fff;
+            border-radius: 4px;
+        }
+        
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        /* Экран входа */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        #login-form {
+            background: #2d2d2d;
+            padding: 40px;
+            border-radius: 10px;
+            width: 300px;
+        }
+        
+        #login-form h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #login-form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #3d3d3d;
+            border: 1px solid #4d4d4d;
+            color: #fff;
+            border-radius: 4px;
+        }
+        
+        #login-form button {
+            width: 100%;
+            padding: 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        #login-error {
+            color: #dc3545;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Экран входа -->
+    <div id="login-screen">
+        <div id="login-form">
+            <h2>Админ панель</h2>
+            <div id="login-error"></div>
+            <input type="text" id="username" placeholder="Логин">
+            <input type="password" id="password" placeholder="Пароль">
+            <button onclick="adminLogin()">Войти</button>
+        </div>
+    </div>
+    
+    <!-- Основное приложение -->
+    <div id="app" style="display: none;">
+        <div id="top-nav">
+            <div class="logo">Админ панель - Мессенджер</div>
+            <div id="admin-info">
+                <span id="admin-name"></span>
+                <span id="admin-role"></span>
+                <button id="logout-btn" onclick="adminLogout()">Выйти</button>
+            </div>
+        </div>
+        
+        <div id="main-content">
+            <!-- Боковое меню -->
+            <div id="sidebar">
+                <div class="menu-item active" onclick="showSection('dashboard')">📊 Дашборд</div>
+                <div class="menu-item" onclick="showSection('games')">🎮 Игры на проверке</div>
+                <div class="menu-item" onclick="showSection('bots')">🤖 Боты на проверке</div>
+                <div class="menu-item" onclick="showSection('users')">👥 Пользователи</div>
+                <div class="menu-item" onclick="showSection('channels')">📢 Каналы</div>
+                <div class="menu-item" onclick="showSection('export')">📤 Экспорт/Импорт</div>
+                <div class="menu-item" onclick="showSection('admins')">👑 Управление админами</div>
+            </div>
+            
+            <!-- Область контента -->
+            <div id="content-area"></div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно создания админа -->
+    <div class="modal" id="create-admin-modal">
+        <div class="modal-content">
+            <h2>Создать администратора</h2>
+            <div class="form-group">
+                <label>Логин</label>
+                <input type="text" id="new-admin-username">
+            </div>
+            <div class="form-group">
+                <label>Пароль</label>
+                <input type="password" id="new-admin-password">
+            </div>
+            <div class="form-group">
+                <label>Роль</label>
+                <select id="new-admin-role">
+                    <option value="admin">Админ</option>
+                    <option value="superadmin">Супер-админ</option>
+                </select>
+            </div>
+            <button class="btn" onclick="createAdmin()">Создать</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentAdmin = null;
+        
+        // Вход админа
+        async function adminLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentAdmin = data.admin;
+                    document.getElementById('admin-name').textContent = currentAdmin.username;
+                    document.getElementById('admin-role').textContent = `(${currentAdmin.role})`;
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    showSection('dashboard');
+                } else {
+                    document.getElementById('login-error').textContent = data.error;
+                }
+            } catch (error) {
+                document.getElementById('login-error').textContent = 'Ошибка подключения';
+            }
+        }
+        
+        // Выход админа
+        function adminLogout() {
+            document.cookie = 'adminToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            location.reload();
+        }
+        
+        // Переключение секций
+        function showSection(section) {
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            switch(section) {
+                case 'dashboard':
+                    showDashboard();
+                    break;
+                case 'games':
+                    showPendingGames();
+                    break;
+                case 'bots':
+                    showPendingBots();
+                    break;
+                case 'users':
+                    showUsers();
+                    break;
+                case 'channels':
+                    showChannels();
+                    break;
+                case 'export':
+                    showExport();
+                    break;
+                case 'admins':
+                    showAdmins();
+                    break;
+            }
+        }
+        
+        // Дашборд
+        async function showDashboard() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = '<div class="stats-grid" id="stats"></div>';
+            
+            // Загружаем статистику
+            const games = await fetch('/api/games').then(r => r.json());
+            const bots = await fetch('/api/bots').then(r => r.json());
+            
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${games.length}</div>
+                    <div class="stat-label">Всего игр</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${bots.length}</div>
+                    <div class="stat-label">Активных ботов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${await getPendingCount('games')}</div>
+                    <div class="stat-label">Игр на проверке</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${await getPendingCount('bots')}</div>
+                    <div class="stat-label">Ботов на проверке</div>
+                </div>
+            `;
+        }
+        
+        // Получение количества на проверке
+        async function getPendingCount(type) {
+            const response = await fetch(`/api/admin/${type}/pending`);
+            const data = await response.json();
+            return data.length;
+        }
+        
+        // Игры на проверке
+        async function showPendingGames() {
+            const response = await fetch('/api/admin/games/pending');
+            const games = await response.json();
+            
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px;">Игры на проверке</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Автор</th>
+                            <th>Тип</th>
+                            <th>Дата</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${games.map(game => `
+                            <tr>
+                                <td>${game.name}</td>
+                                <td>${game.authorName}</td>
+                                <td>${game.type}</td>
+                                <td>${new Date(game.createdAt).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-success" onclick="reviewGame('${game.id}', 'approved')">✓</button>
+                                    <button class="btn btn-danger" onclick="reviewGame('${game.id}', 'rejected')">✗</button>
+                                    <button class="btn" onclick="viewGameCode('${game.id}')">👁️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        // Одобрение/отклонение игры
+        async function reviewGame(gameId, status) {
+            await fetch(`/api/admin/games/${gameId}/review`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            showPendingGames();
+        }
+        
+        // Просмотр кода игры
+        async function viewGameCode(gameId) {
+            const response = await fetch(`/api/games/${gameId}`);
+            const game = await response.json();
+            alert(`Код игры:\n\n${game.code}`);
+        }
+        
+        // Боты на проверке
+        async function showPendingBots() {
+            const response = await fetch('/api/admin/bots/pending');
+            const bots = await response.json();
+            
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px;">Боты на проверке</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Имя</th>
+                            <th>Автор</th>
+                            <th>Команды</th>
+                            <th>Дата</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bots.map(bot => `
+                            <tr>
+                                <td>${bot.name}</td>
+                                <td>${bot.authorName}</td>
+                                <td>${bot.commands?.join(', ') || '-'}</td>
+                                <td>${new Date(bot.createdAt).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-success" onclick="reviewBot('${bot.id}', 'approved', true)">✓</button>
+                                    <button class="btn" onclick="reviewBot('${bot.id}', 'approved', false)">⏸️</button>
+                                    <button class="btn btn-danger" onclick="reviewBot('${bot.id}', 'rejected')">✗</button>
+                                    <button class="btn" onclick="viewBotCode('${bot.id}')">👁️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        // Одобрение/отклонение бота
+        async function reviewBot(botId, status, isActive = false) {
+            await fetch(`/api/admin/bots/${botId}/review`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, isActive })
+            });
+            showPendingBots();
+        }
+        
+        // Просмотр кода бота
+        async function viewBotCode(botId) {
+            const response = await fetch(`/api/bots/${botId}`);
+            const bot = await response.json();
+            alert(`Код бота:\n\n${bot.code}`);
+        }
+        
+        // Пользователи
+        async function showUsers() {
+            // Заглушка
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px;">Пользователи</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Статус</th>
+                            <th>Дата регистрации</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4">Загрузка...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+            
+            // Здесь будет загрузка пользователей из /api/users
+        }
+        
+        // Каналы
+        async function showChannels() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px;">Каналы</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Создатель</th>
+                            <th>Тип</th>
+                            <th>Участники</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5">Загрузка...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        // Экспорт/Импорт
+        function showExport() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px;">Экспорт/Импорт данных</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h3 style="margin-bottom: 15px;">Экспорт</h3>
+                        <button class="btn" onclick="exportData('users')">Экспорт пользователей</button>
+                        <button class="btn" onclick="exportData('games')">Экспорт игр</button>
+                        <button class="btn" onclick="exportData('bots')">Экспорт ботов</button>
+                        <button class="btn" onclick="exportData('channels')">Экспорт каналов</button>
+                    </div>
+                    
+                    <div>
+                        <h3 style="margin-bottom: 15px;">Импорт</h3>
+                        <form id="import-form" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label>Тип данных</label>
+                                <select id="import-type">
+                                    <option value="users">Пользователи</option>
+                                    <option value="games">Игры</option>
+                                    <option value="bots">Боты</option>
+                                    <option value="channels">Каналы</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Файл JSON</label>
+                                <input type="file" id="import-file" accept=".json">
+                            </div>
+                            <button class="btn" onclick="importData(event)">Импортировать</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Экспорт данных
+        async function exportData(type) {
+            const response = await fetch(`/api/admin/export/${type}`);
+            const data = await response.json();
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${type}-export-${new Date().toISOString()}.json`;
+            a.click();
+        }
+        
+        // Импорт данных
+        async function importData(event) {
+            event.preventDefault();
+            
+            const type = document.getElementById('import-type').value;
+            const file = document.getElementById('import-file').files[0];
+            
+            if (!file) {
+                alert('Выберите файл');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch(`/api/admin/import/${type}`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            alert(`Импортировано ${result.count} записей`);
+        }
+        
+        // Управление админами
+        function showAdmins() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px;">Управление администраторами</h2>
+                <button class="btn" onclick="openCreateAdmin()">+ Создать админа</button>
+                <table class="data-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Логин</th>
+                            <th>Роль</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>admin</td>
+                            <td>superadmin</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+        
+        // Открыть модалку создания админа
+        function openCreateAdmin() {
+            if (currentAdmin.role !== 'superadmin') {
+                alert('Только супер-админ может создавать новых админов');
+                return;
+            }
+            document.getElementById('create-admin-modal').classList.add('active');
+        }
+        
+        // Создание админа
+        async function createAdmin() {
+            const admin = {
+                username: document.getElementById('new-admin-username').value,
+                password: document.getElementById('new-admin-password').value,
+                role: document.getElementById('new-admin-role').value
+            };
+            
+            const response = await fetch('/api/admin/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(admin)
+            });
+            
+            if (response.ok) {
+                alert('Админ создан');
+                document.getElementById('create-admin-modal').classList.remove('active');
+                showAdmins();
+            }
+        }
+    </script>
+</body>
+</html>
