@@ -156,6 +156,7 @@
             border-radius: 4px;
             cursor: pointer;
             margin-right: 10px;
+            margin-bottom: 10px;
         }
         
         .btn:hover {
@@ -178,6 +179,15 @@
             background: #c82333;
         }
         
+        .btn-warning {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
         /* Формы */
         .form-group {
             margin-bottom: 15px;
@@ -190,13 +200,19 @@
         }
         
         .form-group input,
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 8px;
             background: #3d3d3d;
             border: 1px solid #4d4d4d;
             color: #fff;
             border-radius: 4px;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            font-family: monospace;
         }
         
         /* Модальные окна */
@@ -223,6 +239,8 @@
             border-radius: 10px;
             max-width: 500px;
             width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
         }
         
         /* Экран входа */
@@ -276,6 +294,36 @@
             margin-bottom: 10px;
             text-align: center;
         }
+        
+        /* Утилиты */
+        .text-center {
+            text-align: center;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+        
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+        
+        .flex {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            background: #007bff;
+        }
+        
+        .badge.superadmin {
+            background: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -296,7 +344,7 @@
             <div class="logo">Админ панель - Мессенджер</div>
             <div id="admin-info">
                 <span id="admin-name"></span>
-                <span id="admin-role"></span>
+                <span id="admin-role" class="badge"></span>
                 <button id="logout-btn" onclick="adminLogout()">Выйти</button>
             </div>
         </div>
@@ -311,6 +359,7 @@
                 <div class="menu-item" onclick="showSection('channels')">📢 Каналы</div>
                 <div class="menu-item" onclick="showSection('export')">📤 Экспорт/Импорт</div>
                 <div class="menu-item" onclick="showSection('admins')">👑 Управление админами</div>
+                <div class="menu-item" onclick="showSection('settings')">⚙️ Настройки</div>
             </div>
             
             <!-- Область контента -->
@@ -331,6 +380,10 @@
                 <input type="password" id="new-admin-password">
             </div>
             <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="new-admin-email">
+            </div>
+            <div class="form-group">
                 <label>Роль</label>
                 <select id="new-admin-role">
                     <option value="admin">Админ</option>
@@ -338,11 +391,51 @@
                 </select>
             </div>
             <button class="btn" onclick="createAdmin()">Создать</button>
+            <button class="btn btn-danger" onclick="closeModal('create-admin-modal')">Отмена</button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно редактирования админа -->
+    <div class="modal" id="edit-admin-modal">
+        <div class="modal-content">
+            <h2>Редактировать администратора</h2>
+            <input type="hidden" id="edit-admin-id">
+            <div class="form-group">
+                <label>Логин</label>
+                <input type="text" id="edit-admin-username">
+            </div>
+            <div class="form-group">
+                <label>Новый пароль (оставьте пустым, если не меняете)</label>
+                <input type="password" id="edit-admin-password">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="edit-admin-email">
+            </div>
+            <div class="form-group">
+                <label>Роль</label>
+                <select id="edit-admin-role">
+                    <option value="admin">Админ</option>
+                    <option value="superadmin">Супер-админ</option>
+                </select>
+            </div>
+            <button class="btn" onclick="updateAdmin()">Сохранить</button>
+            <button class="btn btn-danger" onclick="closeModal('edit-admin-modal')">Отмена</button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно просмотра кода -->
+    <div class="modal" id="view-code-modal">
+        <div class="modal-content">
+            <h2>Код</h2>
+            <pre id="code-viewer" style="background: #1a1a1a; padding: 15px; border-radius: 5px; overflow: auto; max-height: 400px;"></pre>
+            <button class="btn" onclick="closeModal('view-code-modal')">Закрыть</button>
         </div>
     </div>
     
     <script>
         let currentAdmin = null;
+        let currentSection = 'dashboard';
         
         // Вход админа
         async function adminLogin() {
@@ -361,7 +454,8 @@
                 if (response.ok) {
                     currentAdmin = data.admin;
                     document.getElementById('admin-name').textContent = currentAdmin.username;
-                    document.getElementById('admin-role').textContent = `(${currentAdmin.role})`;
+                    document.getElementById('admin-role').textContent = currentAdmin.role;
+                    document.getElementById('admin-role').className = `badge ${currentAdmin.role}`;
                     document.getElementById('login-screen').style.display = 'none';
                     document.getElementById('app').style.display = 'flex';
                     showSection('dashboard');
@@ -381,6 +475,7 @@
         
         // Переключение секций
         function showSection(section) {
+            currentSection = section;
             document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
             event.target.classList.add('active');
             
@@ -406,6 +501,9 @@
                 case 'admins':
                     showAdmins();
                     break;
+                case 'settings':
+                    showSettings();
+                    break;
             }
         }
         
@@ -414,35 +512,46 @@
             const content = document.getElementById('content-area');
             content.innerHTML = '<div class="stats-grid" id="stats"></div>';
             
-            // Загружаем статистику
-            const games = await fetch('/api/games').then(r => r.json());
-            const bots = await fetch('/api/bots').then(r => r.json());
-            
-            document.getElementById('stats').innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-value">${games.length}</div>
-                    <div class="stat-label">Всего игр</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${bots.length}</div>
-                    <div class="stat-label">Активных ботов</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${await getPendingCount('games')}</div>
-                    <div class="stat-label">Игр на проверке</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${await getPendingCount('bots')}</div>
-                    <div class="stat-label">Ботов на проверке</div>
-                </div>
-            `;
-        }
-        
-        // Получение количества на проверке
-        async function getPendingCount(type) {
-            const response = await fetch(`/api/admin/${type}/pending`);
-            const data = await response.json();
-            return data.length;
+            try {
+                const [games, bots, users, channels] = await Promise.all([
+                    fetch('/api/games').then(r => r.json()),
+                    fetch('/api/bots').then(r => r.json()),
+                    fetch('/api/admin/users').then(r => r.json()),
+                    fetch('/api/admin/channels').then(r => r.json())
+                ]);
+                
+                const pendingGames = await fetch('/api/admin/games/pending').then(r => r.json());
+                const pendingBots = await fetch('/api/admin/bots/pending').then(r => r.json());
+                
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${users.length}</div>
+                        <div class="stat-label">Пользователей</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${games.length}</div>
+                        <div class="stat-label">Всего игр</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${bots.length}</div>
+                        <div class="stat-label">Активных ботов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${channels.length}</div>
+                        <div class="stat-label">Каналов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${pendingGames.length}</div>
+                        <div class="stat-label">Игр на проверке</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${pendingBots.length}</div>
+                        <div class="stat-label">Ботов на проверке</div>
+                    </div>
+                `;
+            } catch (error) {
+                content.innerHTML = '<div class="error">Ошибка загрузки данных</div>';
+            }
         }
         
         // Игры на проверке
@@ -452,7 +561,7 @@
             
             const content = document.getElementById('content-area');
             content.innerHTML = `
-                <h2 style="margin-bottom: 20px;">Игры на проверке</h2>
+                <h2 class="mb-20">Игры на проверке (${games.length})</h2>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -466,17 +575,18 @@
                     <tbody>
                         ${games.map(game => `
                             <tr>
-                                <td>${game.name}</td>
+                                <td><strong>${game.name}</strong></td>
                                 <td>${game.authorName}</td>
                                 <td>${game.type}</td>
                                 <td>${new Date(game.createdAt).toLocaleString()}</td>
                                 <td>
-                                    <button class="btn btn-success" onclick="reviewGame('${game.id}', 'approved')">✓</button>
-                                    <button class="btn btn-danger" onclick="reviewGame('${game.id}', 'rejected')">✗</button>
-                                    <button class="btn" onclick="viewGameCode('${game.id}')">👁️</button>
+                                    <button class="btn btn-success" onclick="reviewGame('${game.id}', 'approved')">✓ Одобрить</button>
+                                    <button class="btn btn-danger" onclick="reviewGame('${game.id}', 'rejected')">✗ Отклонить</button>
+                                    <button class="btn" onclick="viewCode('game', '${game.id}')">👁️ Код</button>
                                 </td>
                             </tr>
                         `).join('')}
+                        ${games.length === 0 ? '<tr><td colspan="5" class="text-center">Нет игр на проверке</td></tr>' : ''}
                     </tbody>
                 </table>
             `;
@@ -492,13 +602,6 @@
             showPendingGames();
         }
         
-        // Просмотр кода игры
-        async function viewGameCode(gameId) {
-            const response = await fetch(`/api/games/${gameId}`);
-            const game = await response.json();
-            alert(`Код игры:\n\n${game.code}`);
-        }
-        
         // Боты на проверке
         async function showPendingBots() {
             const response = await fetch('/api/admin/bots/pending');
@@ -506,7 +609,7 @@
             
             const content = document.getElementById('content-area');
             content.innerHTML = `
-                <h2 style="margin-bottom: 20px;">Боты на проверке</h2>
+                <h2 class="mb-20">Боты на проверке (${bots.length})</h2>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -520,18 +623,19 @@
                     <tbody>
                         ${bots.map(bot => `
                             <tr>
-                                <td>${bot.name}</td>
+                                <td><strong>${bot.name}</strong></td>
                                 <td>${bot.authorName}</td>
                                 <td>${bot.commands?.join(', ') || '-'}</td>
                                 <td>${new Date(bot.createdAt).toLocaleString()}</td>
                                 <td>
-                                    <button class="btn btn-success" onclick="reviewBot('${bot.id}', 'approved', true)">✓</button>
-                                    <button class="btn" onclick="reviewBot('${bot.id}', 'approved', false)">⏸️</button>
-                                    <button class="btn btn-danger" onclick="reviewBot('${bot.id}', 'rejected')">✗</button>
-                                    <button class="btn" onclick="viewBotCode('${bot.id}')">👁️</button>
+                                    <button class="btn btn-success" onclick="reviewBot('${bot.id}', 'approved', true)">✓ Актив.</button>
+                                    <button class="btn btn-warning" onclick="reviewBot('${bot.id}', 'approved', false)">⏸️ Неакт.</button>
+                                    <button class="btn btn-danger" onclick="reviewBot('${bot.id}', 'rejected')">✗ Отклонить</button>
+                                    <button class="btn" onclick="viewCode('bot', '${bot.id}')">👁️ Код</button>
                                 </td>
                             </tr>
                         `).join('')}
+                        ${bots.length === 0 ? '<tr><td colspan="5" class="text-center">Нет ботов на проверке</td></tr>' : ''}
                     </tbody>
                 </table>
             `;
@@ -547,44 +651,55 @@
             showPendingBots();
         }
         
-        // Просмотр кода бота
-        async function viewBotCode(botId) {
-            const response = await fetch(`/api/bots/${botId}`);
-            const bot = await response.json();
-            alert(`Код бота:\n\n${bot.code}`);
+        // Просмотр кода
+        async function viewCode(type, id) {
+            const response = await fetch(`/api/${type}s/${id}`);
+            const item = await response.json();
+            document.getElementById('code-viewer').textContent = item.code || 'Код не найден';
+            document.getElementById('view-code-modal').classList.add('active');
         }
         
         // Пользователи
         async function showUsers() {
-            // Заглушка
+            const response = await fetch('/api/admin/users');
+            const users = await response.json();
+            
             const content = document.getElementById('content-area');
             content.innerHTML = `
-                <h2 style="margin-bottom: 20px;">Пользователи</h2>
+                <h2 class="mb-20">Пользователи (${users.length})</h2>
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Имя</th>
+                            <th>Email</th>
                             <th>Статус</th>
                             <th>Дата регистрации</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="4">Загрузка...</td>
-                        </tr>
+                        ${users.map(user => `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.email || '-'}</td>
+                                <td>${user.online ? '🟢 Online' : '⚫ Offline'}</td>
+                                <td>${new Date(user.registeredAt).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             `;
-            
-            // Здесь будет загрузка пользователей из /api/users
         }
         
         // Каналы
         async function showChannels() {
+            const response = await fetch('/api/admin/channels');
+            const channels = await response.json();
+            
             const content = document.getElementById('content-area');
             content.innerHTML = `
-                <h2 style="margin-bottom: 20px;">Каналы</h2>
+                <h2 class="mb-20">Каналы (${channels.length})</h2>
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -592,13 +707,21 @@
                             <th>Создатель</th>
                             <th>Тип</th>
                             <th>Участники</th>
+                            <th>Сообщений</th>
                             <th>Дата</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="5">Загрузка...</td>
-                        </tr>
+                        ${channels.map(channel => `
+                            <tr>
+                                <td><strong>${channel.name}</strong></td>
+                                <td>${channel.creatorName}</td>
+                                <td>${channel.type === 'public' ? '🌐 Публичный' : '🔒 Приватный'}</td>
+                                <td>${channel.members.length}</td>
+                                <td>${channel.messages.length}</td>
+                                <td>${new Date(channel.createdAt).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             `;
@@ -608,19 +731,19 @@
         function showExport() {
             const content = document.getElementById('content-area');
             content.innerHTML = `
-                <h2 style="margin-bottom: 20px;">Экспорт/Импорт данных</h2>
+                <h2 class="mb-20">Экспорт/Импорт данных</h2>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                    <div>
-                        <h3 style="margin-bottom: 15px;">Экспорт</h3>
+                    <div style="background: #2d2d2d; padding: 20px; border-radius: 8px;">
+                        <h3 class="mb-20">📤 Экспорт</h3>
                         <button class="btn" onclick="exportData('users')">Экспорт пользователей</button>
                         <button class="btn" onclick="exportData('games')">Экспорт игр</button>
                         <button class="btn" onclick="exportData('bots')">Экспорт ботов</button>
                         <button class="btn" onclick="exportData('channels')">Экспорт каналов</button>
                     </div>
                     
-                    <div>
-                        <h3 style="margin-bottom: 15px;">Импорт</h3>
+                    <div style="background: #2d2d2d; padding: 20px; border-radius: 8px;">
+                        <h3 class="mb-20">📥 Импорт</h3>
                         <form id="import-form" enctype="multipart/form-data">
                             <div class="form-group">
                                 <label>Тип данных</label>
@@ -635,7 +758,7 @@
                                 <label>Файл JSON</label>
                                 <input type="file" id="import-file" accept=".json">
                             </div>
-                            <button class="btn" onclick="importData(event)">Импортировать</button>
+                            <button class="btn btn-success" onclick="importData(event)">Импортировать</button>
                         </form>
                     </div>
                 </div>
@@ -651,7 +774,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${type}-export-${new Date().toISOString()}.json`;
+            a.download = `${type}-export-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
         }
         
@@ -680,25 +803,45 @@
         }
         
         // Управление админами
-        function showAdmins() {
+        async function showAdmins() {
+            if (currentAdmin.role !== 'superadmin') {
+                document.getElementById('content-area').innerHTML = '<div class="error">У вас нет прав для просмотра этой страницы</div>';
+                return;
+            }
+            
+            const response = await fetch('/api/admin/list');
+            const admins = await response.json();
+            
             const content = document.getElementById('content-area');
             content.innerHTML = `
-                <h2 style="margin-bottom: 20px;">Управление администраторами</h2>
-                <button class="btn" onclick="openCreateAdmin()">+ Создать админа</button>
-                <table class="data-table" style="margin-top: 20px;">
+                <h2 class="mb-20">Управление администраторами</h2>
+                <button class="btn btn-success" onclick="openCreateAdmin()">+ Создать нового админа</button>
+                
+                <table class="data-table mt-20">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Логин</th>
+                            <th>Email</th>
                             <th>Роль</th>
+                            <th>Дата создания</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>admin</td>
-                            <td>superadmin</td>
-                        </tr>
+                        ${admins.map(admin => `
+                            <tr>
+                                <td>${admin.id}</td>
+                                <td>${admin.username}</td>
+                                <td>${admin.email || '-'}</td>
+                                <td><span class="badge ${admin.role}">${admin.role}</span></td>
+                                <td>${new Date(admin.createdAt).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn btn-warning" onclick="openEditAdmin('${admin.id}', '${admin.username}', '${admin.email || ''}', '${admin.role}')">✏️</button>
+                                    ${admin.id !== currentAdmin.id ? `<button class="btn btn-danger" onclick="deleteAdmin('${admin.id}')">🗑️</button>` : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>
             `;
@@ -706,10 +849,10 @@
         
         // Открыть модалку создания админа
         function openCreateAdmin() {
-            if (currentAdmin.role !== 'superadmin') {
-                alert('Только супер-админ может создавать новых админов');
-                return;
-            }
+            document.getElementById('new-admin-username').value = '';
+            document.getElementById('new-admin-password').value = '';
+            document.getElementById('new-admin-email').value = '';
+            document.getElementById('new-admin-role').value = 'admin';
             document.getElementById('create-admin-modal').classList.add('active');
         }
         
@@ -718,8 +861,14 @@
             const admin = {
                 username: document.getElementById('new-admin-username').value,
                 password: document.getElementById('new-admin-password').value,
+                email: document.getElementById('new-admin-email').value,
                 role: document.getElementById('new-admin-role').value
             };
+            
+            if (!admin.username || !admin.password) {
+                alert('Заполните обязательные поля');
+                return;
+            }
             
             const response = await fetch('/api/admin/create', {
                 method: 'POST',
@@ -729,8 +878,114 @@
             
             if (response.ok) {
                 alert('Админ создан');
-                document.getElementById('create-admin-modal').classList.remove('active');
+                closeModal('create-admin-modal');
                 showAdmins();
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        }
+        
+        // Открыть редактирование админа
+        function openEditAdmin(id, username, email, role) {
+            document.getElementById('edit-admin-id').value = id;
+            document.getElementById('edit-admin-username').value = username;
+            document.getElementById('edit-admin-password').value = '';
+            document.getElementById('edit-admin-email').value = email;
+            document.getElementById('edit-admin-role').value = role;
+            document.getElementById('edit-admin-modal').classList.add('active');
+        }
+        
+        // Обновление админа
+        async function updateAdmin() {
+            const id = document.getElementById('edit-admin-id').value;
+            const admin = {
+                username: document.getElementById('edit-admin-username').value,
+                email: document.getElementById('edit-admin-email').value,
+                role: document.getElementById('edit-admin-role').value
+            };
+            
+            const password = document.getElementById('edit-admin-password').value;
+            if (password) {
+                admin.password = password;
+            }
+            
+            const response = await fetch(`/api/admin/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(admin)
+            });
+            
+            if (response.ok) {
+                alert('Админ обновлен');
+                closeModal('edit-admin-modal');
+                showAdmins();
+            }
+        }
+        
+        // Удаление админа
+        async function deleteAdmin(id) {
+            if (!confirm('Вы уверены, что хотите удалить этого админа?')) return;
+            
+            const response = await fetch(`/api/admin/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                alert('Админ удален');
+                showAdmins();
+            }
+        }
+        
+        // Настройки
+        function showSettings() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <h2 class="mb-20">Настройки системы</h2>
+                
+                <div style="background: #2d2d2d; padding: 20px; border-radius: 8px;">
+                    <h3 class="mb-20">Информация о системе</h3>
+                    
+                    <div class="form-group">
+                        <label>Версия</label>
+                        <input type="text" value="1.0.0" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Режим работы</label>
+                        <input type="text" value="${window.location.hostname === 'localhost' ? 'Development' : 'Production'}" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Сервер</label>
+                        <input type="text" value="${window.location.origin}" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Данные супер-админа</label>
+                        <div style="background: #363636; padding: 10px; border-radius: 4px;">
+                            <p>Супер-админ настроен через переменные окружения на Render</p>
+                            <p>Для изменения данных супер-админа обновите переменные окружения:</p>
+                            <ul style="margin-left: 20px; margin-top: 10px;">
+                                <li>SUPER_ADMIN_USERNAME</li>
+                                <li>SUPER_ADMIN_PASSWORD</li>
+                                <li>SUPER_ADMIN_EMAIL</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Закрыть модальное окно
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        // Закрытие модальных окон по клику вне
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
             }
         }
     </script>
