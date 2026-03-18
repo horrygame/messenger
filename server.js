@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const fs = require('fs-extra');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -17,43 +18,67 @@ app.use(express.static(__dirname));
 app.use(express.json());
 app.use(cookieParser());
 
-// Секретный ключ для JWT
-const JWT_SECRET = 'your-secret-key-change-this-in-production';
+// Настройки из переменных окружения
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key-change-me';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Данные супер-админа из переменных окружения
+const SUPER_ADMIN = {
+    username: process.env.SUPER_ADMIN_USERNAME || 'admin',
+    password: process.env.SUPER_ADMIN_PASSWORD || 'admin123',
+    email: process.env.SUPER_ADMIN_EMAIL || 'admin@localhost',
+    role: 'superadmin'
+};
+
+console.log(`Запуск в режиме: ${NODE_ENV}`);
+console.log(`Супер-админ настроен: ${SUPER_ADMIN.username}`);
 
 // Файлы для хранения данных
-const DATA_DIR = './data';
-const USERS_FILE = `${DATA_DIR}/users.json`;
-const GAMES_FILE = `${DATA_DIR}/games.json`;
-const BOTS_FILE = `${DATA_DIR}/bots.json`;
-const CHANNELS_FILE = `${DATA_DIR}/channels.json`;
-const MESSAGES_FILE = `${DATA_DIR}/messages.json`;
-const ADMINS_FILE = `${DATA_DIR}/admins.json`;
+const DATA_DIR = path.join(__dirname, 'data');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const GAMES_FILE = path.join(DATA_DIR, 'games.json');
+const BOTS_FILE = path.join(DATA_DIR, 'bots.json');
+const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
+const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
+const ADMINS_FILE = path.join(DATA_DIR, 'admins.json');
 
 // Инициализация файлов данных
 async function initDataFiles() {
-    await fs.ensureDir(DATA_DIR);
-    
-    const files = [
-        USERS_FILE, GAMES_FILE, BOTS_FILE, CHANNELS_FILE, MESSAGES_FILE, ADMINS_FILE
-    ];
-    
-    for (const file of files) {
-        if (!await fs.pathExists(file)) {
-            await fs.writeJson(file, []);
+    try {
+        await fs.ensureDir(DATA_DIR);
+        
+        const files = [
+            USERS_FILE, GAMES_FILE, BOTS_FILE, CHANNELS_FILE, MESSAGES_FILE, ADMINS_FILE
+        ];
+        
+        for (const file of files) {
+            if (!await fs.pathExists(file)) {
+                await fs.writeJson(file, []);
+            }
         }
-    }
-    
-    // Создаем админа по умолчанию
-    const admins = await fs.readJson(ADMINS_FILE);
-    if (admins.length === 0) {
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        admins.push({
-            id: '1',
-            username: 'admin',
-            password: hashedPassword,
-            role: 'superadmin'
-        });
-        await fs.writeJson(ADMINS_FILE, admins);
+        
+        // Создаем супер-админа из переменных окружения
+        const admins = await fs.readJson(ADMINS_FILE);
+        const superAdminExists = admins.some(a => a.role === 'superadmin');
+        
+        if (!superAdminExists) {
+            const hashedPassword = await bcrypt.hash(SUPER_ADMIN.password, 10);
+            admins.push({
+                id: '1',
+                username: SUPER_ADMIN.username,
+                password: hashedPassword,
+                email: SUPER_ADMIN.email,
+                role: SUPER_ADMIN.role,
+                createdAt: new Date().toISOString()
+            });
+            await fs.writeJson(ADMINS_FILE, admins);
+            console.log('Супер-админ создан из переменных окружения');
+        } else {
+            console.log('Супер-админ уже существует');
+        }
+    } catch (error) {
+        console.error('Ошибка инициализации данных:', error);
     }
 }
 
@@ -131,7 +156,7 @@ async function isAdmin(req, res, next) {
 
 // Регистрация
 app.post('/api/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, email } = req.body;
     
     if (!username || !password) {
         return res.status(400).json({ error: 'Заполните все поля' });
@@ -147,6 +172,7 @@ app.post('/api/register', async (req, res) => {
     const newUser = {
         id: Date.now().toString(),
         username,
+        email: email || '',
         password: hashedPassword,
         online: false,
         registeredAt: new Date().toISOString()
@@ -158,7 +184,7 @@ app.post('/api/register', async (req, res) => {
     const token = jwt.sign({ id: newUser.id, username }, JWT_SECRET);
     res.cookie('token', token, { httpOnly: true });
     
-    res.json({ success: true, user: { id: newUser.id, username } });
+    res.json({ success: true, user: { id: newUser.id, username, email: newUser.email } });
 });
 
 // Вход
@@ -175,7 +201,7 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign({ id: user.id, username }, JWT_SECRET);
     res.cookie('token', token, { httpOnly: true });
     
-    res.json({ success: true, user: { id: user.id, username } });
+    res.json({ success: true, user: { id: user.id, username, email: user.email } });
 });
 
 // Выход
@@ -201,7 +227,7 @@ app.get('/api/me', async (req, res) => {
             return res.json({ user: null });
         }
         
-        res.json({ user: { id: user.id, username: user.username } });
+        res.json({ user: { id: user.id, username: user.username, email: user.email } });
     } catch (error) {
         res.clearCookie('token');
         res.json({ user: null });
@@ -320,6 +346,18 @@ app.get('/api/bots', async (req, res) => {
     res.json(active);
 });
 
+// Получение бота по ID
+app.get('/api/bots/:id', async (req, res) => {
+    const bots = await getBots();
+    const bot = bots.find(b => b.id === req.params.id);
+    
+    if (!bot) {
+        return res.status(404).json({ error: 'Бот не найден' });
+    }
+    
+    res.json(bot);
+});
+
 // Выполнение команды бота
 app.post('/api/bots/:id/command', async (req, res) => {
     const bots = await getBots();
@@ -414,6 +452,12 @@ app.post('/api/channels/:id/message', async (req, res) => {
     res.json({ success: true, message });
 });
 
+// Получение всех каналов (для админа)
+app.get('/api/admin/channels', isAdmin, async (req, res) => {
+    const channels = await getChannels();
+    res.json(channels);
+});
+
 // ============ АДМИН ПАНЕЛЬ ============
 
 // Вход админа
@@ -428,9 +472,26 @@ app.post('/api/admin/login', async (req, res) => {
     }
     
     const token = jwt.sign({ id: admin.id, username: admin.username, role: admin.role }, JWT_SECRET);
-    res.cookie('adminToken', token, { httpOnly: true });
+    res.cookie('adminToken', token, { 
+        httpOnly: true,
+        secure: NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 часа
+    });
     
-    res.json({ success: true, admin: { id: admin.id, username: admin.username, role: admin.role } });
+    res.json({ 
+        success: true, 
+        admin: { 
+            id: admin.id, 
+            username: admin.username, 
+            role: admin.role,
+            email: admin.email 
+        } 
+    });
+});
+
+// Получение текущего админа
+app.get('/api/admin/me', isAdmin, async (req, res) => {
+    res.json({ admin: req.admin });
 });
 
 // Получение игр на проверку
@@ -480,6 +541,18 @@ app.post('/api/admin/bots/:id/review', isAdmin, async (req, res) => {
     }
     
     res.json({ success: true });
+});
+
+// Получение всех пользователей (для админа)
+app.get('/api/admin/users', isAdmin, async (req, res) => {
+    const users = await getUsers();
+    res.json(users.map(u => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        online: u.online,
+        registeredAt: u.registeredAt
+    })));
 });
 
 // Экспорт данных
@@ -535,17 +608,18 @@ app.post('/api/admin/import/:type', isAdmin, upload.single('file'), async (req, 
         await fs.remove(req.file.path);
         res.json({ success: true, count: data.length });
     } catch (error) {
+        console.error('Ошибка импорта:', error);
         res.status(500).json({ error: 'Ошибка импорта' });
     }
 });
 
-// Создание нового админа
+// Создание нового админа (только для супер-админа)
 app.post('/api/admin/create', isAdmin, async (req, res) => {
     if (req.admin.role !== 'superadmin') {
         return res.status(403).json({ error: 'Недостаточно прав' });
     }
     
-    const { username, password, role } = req.body;
+    const { username, password, email, role } = req.body;
     
     const admins = await getAdmins();
     
@@ -558,12 +632,81 @@ app.post('/api/admin/create', isAdmin, async (req, res) => {
         id: Date.now().toString(),
         username,
         password: hashedPassword,
-        role: role || 'admin'
+        email: email || '',
+        role: role || 'admin',
+        createdAt: new Date().toISOString()
     };
     
     admins.push(newAdmin);
     await fs.writeJson(ADMINS_FILE, admins);
     
+    res.json({ success: true, admin: { id: newAdmin.id, username: newAdmin.username, role: newAdmin.role } });
+});
+
+// Получение всех админов (только для супер-админа)
+app.get('/api/admin/list', isAdmin, async (req, res) => {
+    if (req.admin.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+    
+    const admins = await getAdmins();
+    res.json(admins.map(a => ({
+        id: a.id,
+        username: a.username,
+        email: a.email,
+        role: a.role,
+        createdAt: a.createdAt
+    })));
+});
+
+// Обновление данных админа (только для супер-админа)
+app.put('/api/admin/:id', isAdmin, async (req, res) => {
+    if (req.admin.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+    
+    const { id } = req.params;
+    const { username, email, role, password } = req.body;
+    
+    const admins = await getAdmins();
+    const admin = admins.find(a => a.id === id);
+    
+    if (!admin) {
+        return res.status(404).json({ error: 'Админ не найден' });
+    }
+    
+    if (username) admin.username = username;
+    if (email) admin.email = email;
+    if (role) admin.role = role;
+    if (password) {
+        admin.password = await bcrypt.hash(password, 10);
+    }
+    
+    await fs.writeJson(ADMINS_FILE, admins);
+    res.json({ success: true });
+});
+
+// Удаление админа (только для супер-админа)
+app.delete('/api/admin/:id', isAdmin, async (req, res) => {
+    if (req.admin.role !== 'superadmin') {
+        return res.status(403).json({ error: 'Недостаточно прав' });
+    }
+    
+    const { id } = req.params;
+    
+    // Нельзя удалить самого себя
+    if (id === req.admin.id) {
+        return res.status(400).json({ error: 'Нельзя удалить самого себя' });
+    }
+    
+    const admins = await getAdmins();
+    const filtered = admins.filter(a => a.id !== id);
+    
+    if (filtered.length === admins.length) {
+        return res.status(404).json({ error: 'Админ не найден' });
+    }
+    
+    await fs.writeJson(ADMINS_FILE, filtered);
     res.json({ success: true });
 });
 
@@ -580,11 +723,16 @@ io.on('connection', (socket) => {
         if (user) {
             user.online = true;
             await saveUsers(users);
+            io.emit('user-status', { userId, online: true });
         }
     });
     
     socket.on('join-channel', (channelId) => {
         socket.join(`channel-${channelId}`);
+    });
+    
+    socket.on('leave-channel', (channelId) => {
+        socket.leave(`channel-${channelId}`);
     });
     
     socket.on('disconnect', async () => {
@@ -594,14 +742,29 @@ io.on('connection', (socket) => {
             if (user) {
                 user.online = false;
                 await saveUsers(users);
+                io.emit('user-status', { userId: socket.userId, online: false });
             }
         }
     });
 });
 
-const PORT = 3000;
+// Обработка ошибок
+app.use((err, req, res, next) => {
+    console.error('Ошибка сервера:', err);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+});
+
+// Запуск сервера
 server.listen(PORT, () => {
-    console.log(`Сервер запущен на http://localhost:${PORT}`);
+    console.log(`=================================`);
+    console.log(`Сервер запущен на порту ${PORT}`);
+    console.log(`Режим: ${NODE_ENV}`);
+    console.log(`Основной сайт: http://localhost:${PORT}`);
     console.log(`Админ панель: http://localhost:${PORT}/admin.html`);
-    console.log('Логин админа по умолчанию: admin / admin123');
+    console.log(`=================================`);
+    console.log(`Данные супер-админа из .env:`);
+    console.log(`Логин: ${SUPER_ADMIN.username}`);
+    console.log(`Пароль: ${SUPER_ADMIN.password.replace(/./g, '*')}`);
+    console.log(`Email: ${SUPER_ADMIN.email}`);
+    console.log(`=================================`);
 });
